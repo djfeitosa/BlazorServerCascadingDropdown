@@ -1,0 +1,76 @@
+﻿@page "/"
+@using BlazorServerCascadingDropdowns.Models
+@using BlazorServerCascadingDropdowns.Services
+@inject IVideoGameService VideoGameService
+@inject IJSRuntime JS
+@* @rendermode InteractiveServer *@
+
+<div>
+    <label for="platforms">Choose a Platform:</label>
+    <select id="platforms" @bind="selectedPlatformId" @bind:after="OnPlatformSelected">
+        <option value="0">--- Select a Platform ---</option>
+        @foreach (var platform in platforms) 
+        {
+            <option value="@platform.Id">@platform.Name</option>
+        }
+    </select>
+</div>
+
+<div>
+    <label for="genres">Choose a Genre:</label>
+    <select id="genres" @bind="selectedGenreId" @bind:after="OnGenreSelected" disabled="@(!hasSelectedPlatformId)">
+        <option value="0">--- Select a genre ---</option>
+        @foreach (var genre in genres) 
+        {
+            <option value="@genre.Id">@genre.Name</option>
+        }
+    </select>
+</div>
+
+<div>
+    <label for="videoGames">Choose a Video Game:</label>
+    <select id="videoGames" @bind="selectedVideoGameId" disabled="@(!hasSelectedGenreId)">
+        <option value="0">--- Select a Video Game ---</option>
+        `@foreach (var videoGame in videoGames) 
+        {
+            <option value="@videoGame.Id">@videoGame.Title</option>
+        }
+    </select>
+</div>
+
+<button @onclick="ShowMeTheGame">Show me Selected Game</button>
+
+@code {
+    private List<Platform> platforms = new();
+    private List<Genre> genres = new();
+    private List<VideoGame> videoGames = new();
+    private int selectedPlatformId;
+    private int selectedGenreId;
+    private int selectedVideoGameId;
+    private bool hasSelectedPlatformId => selectedPlatformId > 0;
+    private bool hasSelectedGenreId => selectedGenreId > 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        platforms = await VideoGameService.GetPlataformAsync();
+    }
+
+    private async Task OnPlatformSelected()
+    {
+        genres = await VideoGameService.GetGenresByPlatformAsync(selectedPlatformId);
+        videoGames.Clear();
+        selectedGenreId = 0;
+        selectedVideoGameId = 0;
+    }
+
+    private async Task OnGenreSelected()
+    {
+        videoGames = await VideoGameService.GetVideoGameByPlataformGenreAsync(selectedPlatformId, selectedGenreId);
+        selectedVideoGameId = 0;
+    }
+
+    async Task ShowMeTheGame()
+    {
+        await JS.InvokeVoidAsync("alert", $"Platform: {selectedPlatformId}, Genre: {selectedGenreId}, Video Game: {selectedVideoGameId}");
+    }
+}
